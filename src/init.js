@@ -1,4 +1,5 @@
 import { compileToFunction } from "./compiler";
+import { mountComponent } from "./lifecycle";
 import { initState } from "./state";
 
 // Vue 增加 init 方法
@@ -35,13 +36,14 @@ export function initMixin(Vue) {
           template = ops.template;
         }
       }
-      if (template) {
+      if (template && el) {
         // 编译模板
         const render = compileToFunction(template);
         ops.render = render;
       }
     }
 
-    ops.render;
+    // 组件挂载
+    mountComponent(vm, el);
   };
 }

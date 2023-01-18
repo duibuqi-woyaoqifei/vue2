@@ -7,13 +7,13 @@
   <title>Document</title>
 </head>
 <body>
-  <div id="app">
+  <div id="app" style="height: 1px;width: 1px;">
     <div style="color: aqua;">
-      {{name}}
+      asd{{name}}hello{{age}}asd
     </div>
 
     <span>
-      {{age}}
+      wwwww
     </span>
   </div>
   <script src="vue.js"></script>
@@ -32,6 +32,13 @@
       }
     })
     vm.$mount('#app')
+
+    setTimeout(() => {
+      vm.name = 'jw'
+      vm.age = 3333
+
+      vm._update(vm._render())
+    }, 1000);
   </script>
 </body>
 </html>

@@ -4,7 +4,6 @@ const attribute = /^\s*([^\s"'<>\/=]+)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s
 const startTagOpen = new RegExp(`^<${qnameCapture}`); // 匹配 <xxx
 const endTag = new RegExp(`^<\\/${qnameCapture}[^>]*>`); // 匹配 </xxx>
 const startTagClose = /^\s*(\/?)>/; // 匹配 <div> <br/>
-const defaultTagRE = /\{\{((?:.|\r?\n)+?)\}\}/g; // 匹配 {{ xxx }}
 
 // 对模板进行编译处理
 export function parseHTML(html) {

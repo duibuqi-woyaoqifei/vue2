@@ -4,6 +4,101 @@
   (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.Vue = factory());
 })(this, (function () { 'use strict';
 
+  function _iterableToArrayLimit(arr, i) {
+    var _i = null == arr ? null : "undefined" != typeof Symbol && arr[Symbol.iterator] || arr["@@iterator"];
+    if (null != _i) {
+      var _s,
+        _e,
+        _x,
+        _r,
+        _arr = [],
+        _n = !0,
+        _d = !1;
+      try {
+        if (_x = (_i = _i.call(arr)).next, 0 === i) {
+          if (Object(_i) !== _i) return;
+          _n = !1;
+        } else for (; !(_n = (_s = _x.call(_i)).done) && (_arr.push(_s.value), _arr.length !== i); _n = !0);
+      } catch (err) {
+        _d = !0, _e = err;
+      } finally {
+        try {
+          if (!_n && null != _i.return && (_r = _i.return(), Object(_r) !== _r)) return;
+        } finally {
+          if (_d) throw _e;
+        }
+      }
+      return _arr;
+    }
+  }
+  function _typeof(obj) {
+    "@babel/helpers - typeof";
+
+    return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) {
+      return typeof obj;
+    } : function (obj) {
+      return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+    }, _typeof(obj);
+  }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError("Cannot call a class as a function");
+    }
+  }
+  function _defineProperties(target, props) {
+    for (var i = 0; i < props.length; i++) {
+      var descriptor = props[i];
+      descriptor.enumerable = descriptor.enumerable || false;
+      descriptor.configurable = true;
+      if ("value" in descriptor) descriptor.writable = true;
+      Object.defineProperty(target, _toPropertyKey(descriptor.key), descriptor);
+    }
+  }
+  function _createClass(Constructor, protoProps, staticProps) {
+    if (protoProps) _defineProperties(Constructor.prototype, protoProps);
+    if (staticProps) _defineProperties(Constructor, staticProps);
+    Object.defineProperty(Constructor, "prototype", {
+      writable: false
+    });
+    return Constructor;
+  }
+  function _slicedToArray(arr, i) {
+    return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest();
+  }
+  function _arrayWithHoles(arr) {
+    if (Array.isArray(arr)) return arr;
+  }
+  function _unsupportedIterableToArray(o, minLen) {
+    if (!o) return;
+    if (typeof o === "string") return _arrayLikeToArray(o, minLen);
+    var n = Object.prototype.toString.call(o).slice(8, -1);
+    if (n === "Object" && o.constructor) n = o.constructor.name;
+    if (n === "Map" || n === "Set") return Array.from(o);
+    if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen);
+  }
+  function _arrayLikeToArray(arr, len) {
+    if (len == null || len > arr.length) len = arr.length;
+    for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i];
+    return arr2;
+  }
+  function _nonIterableRest() {
+    throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
+  }
+  function _toPrimitive(input, hint) {
+    if (typeof input !== "object" || input === null) return input;
+    var prim = input[Symbol.toPrimitive];
+    if (prim !== undefined) {
+      var res = prim.call(input, hint || "default");
+      if (typeof res !== "object") return res;
+      throw new TypeError("@@toPrimitive must return a primitive value.");
+    }
+    return (hint === "string" ? String : Number)(input);
+  }
+  function _toPropertyKey(arg) {
+    var key = _toPrimitive(arg, "string");
+    return typeof key === "symbol" ? key : String(key);
+  }
+
   var ncname = "[a-zA-Z_][\\w\\-\\.]*";
   var qnameCapture = "((?:".concat(ncname, "\\:)?").concat(ncname, ")");
   var attribute = /^\s*([^\s"'<>\/=]+)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/; // 匹配属性
@@ -119,62 +214,193 @@
     return root;
   }
 
+  function rootProps(attrs) {
+    // { name, value }
+    var str = "";
+    var _loop = function _loop() {
+      var attr = attrs[i];
+      if (attr.name === "style") {
+        var obj = {};
+        attr.value.split(";").forEach(function (item) {
+          var _item$split = item.split(":"),
+            _item$split2 = _slicedToArray(_item$split, 2),
+            key = _item$split2[0],
+            value = _item$split2[1];
+          if (key) {
+            obj[key] = value;
+          }
+        });
+        attr.value = obj;
+      }
+      str += "".concat(attr.name, ":").concat(JSON.stringify(attr.value), ",");
+    };
+    for (var i = 0; i < attrs.length; i++) {
+      _loop();
+    }
+    return "{".concat(str.slice(0, -1), "}");
+  }
+  var defaultTagRE = /\{\{((?:.|\r?\n)+?)\}\}/g; // 匹配 {{ xxx }}
+  function root(node) {
+    // 判断标签节点和文本
+    if (node.type === 1) {
+      return codeRoot(node);
+    } else {
+      var text = node.text;
+      if (!defaultTagRE.test(text)) {
+        return "_v(".concat(JSON.stringify(text), ")");
+      } else {
+        var tokens = [];
+        var match;
+        defaultTagRE.lastIndex = 0;
+        var lastIndex = 0;
+        while (match = defaultTagRE.exec(text)) {
+          var index = match.index;
+          if (index > lastIndex) {
+            tokens.push(JSON.stringify(text.slice(lastIndex, index)));
+          }
+          tokens.push("_s(".concat(match[1], ")"));
+          lastIndex = index + match[0].length;
+        }
+        if (lastIndex < text.length) {
+          tokens.push(JSON.stringify(text.slice(lastIndex)));
+        }
+        return "_v(".concat(tokens.join("+"), ")");
+      }
+    }
+  }
+  function rootChildren(children) {
+    return children.map(function (child) {
+      return root(child);
+    }).join(",");
+  }
   function codeRoot(ast) {
-    var code = "_c('".concat(ast.tag, "')");
+    var children = rootChildren(ast.children);
+    var code = "_c('".concat(ast.tag, "',").concat(ast.attrs.length > 0 ? rootProps(ast.attrs) : "null").concat(ast.children.length ? ",".concat(children) : "", ")");
     return code;
   }
   function compileToFunction(template) {
     // template 模板转化成 ast 语法树
     var ast = parseHTML(template);
 
-    // 生成 render 方法返回虚拟 dom
-    console.log(codeRoot(ast));
+    // 生成 render 方法返回虚拟 dom , with 函数 + new Function 实现模板引擎
+    var code = codeRoot(ast);
+    code = "with(this) { return ".concat(code, " }");
+    var render = new Function(code);
+    return render;
   }
 
-  function _typeof(obj) {
-    "@babel/helpers - typeof";
+  // h() _c()
+  function createElementVNode(vm, tag, data) {
+    if (data === null) {
+      data = {};
+    }
+    var key = data.key;
+    if (key) {
+      delete data.key;
+    }
+    for (var _len = arguments.length, children = new Array(_len > 3 ? _len - 3 : 0), _key = 3; _key < _len; _key++) {
+      children[_key - 3] = arguments[_key];
+    }
+    return vnode(vm, tag, key, data, children);
+  }
 
-    return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) {
-      return typeof obj;
-    } : function (obj) {
-      return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
-    }, _typeof(obj);
+  // _v()
+  function createTextVNode(vm, text) {
+    return vnode(vm, undefined, undefined, undefined, undefined, text);
   }
-  function _classCallCheck(instance, Constructor) {
-    if (!(instance instanceof Constructor)) {
-      throw new TypeError("Cannot call a class as a function");
+
+  // 可增加自定义属性描述 dom
+  function vnode(vm, tag, key, data, children, text) {
+    return {
+      vm: vm,
+      tag: tag,
+      key: key,
+      data: data,
+      children: children,
+      text: text
+    };
+  }
+
+  function createElm(vnode) {
+    var tag = vnode.tag,
+      data = vnode.data,
+      children = vnode.children,
+      text = vnode.text;
+    if (typeof tag === "string") {
+      vnode.el = document.createElement(tag);
+      patchProps(vnode.el, data);
+      children.forEach(function (child) {
+        vnode.el.appendChild(createElm(child));
+      });
+    } else {
+      vnode.el = document.createTextNode(text);
+    }
+    return vnode.el;
+  }
+  function patchProps(el, props) {
+    for (var key in props) {
+      if (key === "style") {
+        for (var styleName in props.style) {
+          el.style[styleName] = props.style[styleName];
+        }
+      } else {
+        el.setAttribute(key, props[key]);
+      }
     }
   }
-  function _defineProperties(target, props) {
-    for (var i = 0; i < props.length; i++) {
-      var descriptor = props[i];
-      descriptor.enumerable = descriptor.enumerable || false;
-      descriptor.configurable = true;
-      if ("value" in descriptor) descriptor.writable = true;
-      Object.defineProperty(target, _toPropertyKey(descriptor.key), descriptor);
+  function patch(oldVNode, vnode) {
+    var isRealElement = oldVNode.nodeType;
+    if (isRealElement) {
+      // 获取真实元素
+      var elm = oldVNode;
+
+      // 获取父元素
+      var parentElm = elm.parentNode;
+      var newElm = createElm(vnode);
+
+      // 插入新节点
+      parentElm.insertBefore(newElm, elm.nextSibling);
+
+      // 删除旧节点
+      parentElm.removeChild(elm);
+      return newElm;
     }
   }
-  function _createClass(Constructor, protoProps, staticProps) {
-    if (protoProps) _defineProperties(Constructor.prototype, protoProps);
-    if (staticProps) _defineProperties(Constructor, staticProps);
-    Object.defineProperty(Constructor, "prototype", {
-      writable: false
-    });
-    return Constructor;
+  function initLifeCycle(Vue) {
+    Vue.prototype._update = function (vnode) {
+      var vm = this;
+      var el = vm.$el;
+
+      // 初始化和更新
+      vm.$el = patch(el, vnode);
+    };
+    Vue.prototype._c = function () {
+      return createElementVNode.apply(void 0, [this].concat(Array.prototype.slice.call(arguments)));
+    };
+    Vue.prototype._v = function () {
+      return createTextVNode.apply(void 0, [this].concat(Array.prototype.slice.call(arguments)));
+    };
+    Vue.prototype._s = function (value) {
+      if (_typeof(value) !== "object") {
+        return value;
+      }
+      return JSON.stringify(value);
+    };
+    Vue.prototype._render = function () {
+      var vm = this;
+      return vm.$options.render.call(vm);
+    };
   }
-  function _toPrimitive(input, hint) {
-    if (typeof input !== "object" || input === null) return input;
-    var prim = input[Symbol.toPrimitive];
-    if (prim !== undefined) {
-      var res = prim.call(input, hint || "default");
-      if (typeof res !== "object") return res;
-      throw new TypeError("@@toPrimitive must return a primitive value.");
-    }
-    return (hint === "string" ? String : Number)(input);
-  }
-  function _toPropertyKey(arg) {
-    var key = _toPrimitive(arg, "string");
-    return typeof key === "symbol" ? key : String(key);
+  function mountComponent(vm, el) {
+    // el 已经通过 querySelector 处理过
+    vm.$el = el;
+
+    // 调用 render 方法产生虚拟dom
+    vm._update(vm._render());
+
+    // 根据虚拟 dom 产生真实 dom
+
+    // 插入 dom 到 el 元素中
   }
 
   // 重写数组部分方法
@@ -335,13 +561,15 @@
             template = ops.template;
           }
         }
-        if (template) {
+        if (template && el) {
           // 编译模板
           var render = compileToFunction(template);
           ops.render = render;
         }
       }
-      ops.render;
+
+      // 组件挂载
+      mountComponent(vm, el);
     };
   }
 
@@ -352,6 +580,7 @@
 
   // 扩展 init 方法
   initMixin(Vue);
+  initLifeCycle(Vue);
 
   return Vue;
 
