@@ -289,6 +289,73 @@
     return render;
   }
 
+  var Dep = /*#__PURE__*/function () {
+    function Dep() {
+      _classCallCheck(this, Dep);
+      // 属性的 dep 要收集 watcher
+      this.id = id++;
+
+      // 存放当前属性对应的 watcher 有哪些
+      this.subs = [];
+    }
+    _createClass(Dep, [{
+      key: "depend",
+      value: function depend() {
+        Dep.target.addDep(this);
+      }
+    }, {
+      key: "addSub",
+      value: function addSub(watcher) {
+        this.subs.push(watcher);
+      }
+    }]);
+    return Dep;
+  }();
+  Dep.target = null;
+
+  var id$1 = 0;
+
+  // 渲染根实例
+  var Watcher = /*#__PURE__*/function () {
+    function Watcher(vm, fn, options) {
+      _classCallCheck(this, Watcher);
+      this.id = id$1++;
+
+      // 是一个渲染 watcher
+      this.renderWatcher = options;
+
+      // getter 意味着调用这个函数可以发生取值操作
+      this.getter = fn;
+      this.deps = [];
+      this.depsId = new Set();
+      this.get();
+    }
+    _createClass(Watcher, [{
+      key: "addDep",
+      value: function addDep(dep) {
+        var id = dep.id;
+        if (!this.depsId.has(id)) {
+          this.deps.push(dep);
+          this.depsId.add(id);
+          dep.addSub(this);
+        }
+      }
+    }, {
+      key: "get",
+      value: function get() {
+        // 静态属性只有一份
+        Dep.target = this;
+
+        // 会去 vm 上取值
+        this.getter();
+
+        // 渲染完毕清空
+        Dep.target = null;
+      }
+    }]);
+    return Watcher;
+  }(); //
+
   // h() _c()
   function createElementVNode(vm, tag, data) {
     if (data === null) {
@@ -396,7 +463,10 @@
     vm.$el = el;
 
     // 调用 render 方法产生虚拟dom
-    vm._update(vm._render());
+    var updateComponent = function updateComponent() {
+      vm._update(vm._render());
+    };
+    new Watcher(vm, updateComponent, true);
 
     // 根据虚拟 dom 产生真实 dom
 
@@ -475,9 +545,15 @@
   function defineReactive(target, key, value) {
     // 对所有对象都进行属性劫持
     observe(value);
+
+    // 每一个属性都有一个 dep
+    var dep = new Dep();
     Object.defineProperty(target, key, {
       // 读取执行 get
       get: function get() {
+        if (Dep.target) {
+          dep.depend();
+        }
         return value;
       },
       // 修改执行 set
