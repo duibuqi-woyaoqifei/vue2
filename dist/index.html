@@ -7,8 +7,20 @@
   <title>Document</title>
 </head>
 <body>
+  <div id="app" style="height: 1px;width: 1px;">
+    <div style="color: aqua;">
+      asd{{name}}hello{{age}}asd
+    </div>
+
+    <span>
+      wwwww
+    </span>
+  </div>
   <script src="vue.js"></script>
   <script>
+
+    console.log(Vue.options);
+
     const vm = new Vue({
       data() {
         return {
@@ -18,18 +30,40 @@
             content: 'qwdq',
             details: 'dwdqdwdqwdqwd'
           },
-          hobby: ['eat people', 'fucking vagina', 'make love']
+          hobby: ['asdasd', 'sadsadad', 'sadadqwdwqe']
         }
+      },
+      created() {
+        console.log('created');
       }
     })
 
-    // vm.$mount('#app');
-    setTimeout(() => {
-      vm.name = 'jw'
-      vm.name = 2
-      vm.name = 10
-      vm.name = 20
-    }, 1000);
+    Vue.mixin({
+      created() {
+        console.log('mixin1-created');
+      },
+      a: 1
+    })
+    Vue.mixin({
+      created() {
+        console.log('mixin1-created');
+      },
+      b: 2
+    })
+    // vm.$mount('#app')
+
+    // vm.$nextTick(() => {
+    //   console.log(app.innerHTML);
+    // })
+    // vm.$nextTick(() => {
+    //   console.log(app.innerHTML);
+    // })
+    // vm.$nextTick(() => {
+    //   console.log(app.innerHTML);
+    // })
+
+
+    // vm.name = 'jw'
   </script>
 </body>
 </html>
