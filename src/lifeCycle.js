@@ -43,7 +43,7 @@ function patch(oldVNode, vnode) {
     // 删除旧节点
     parentElm.removeChild(elm);
 
-    return newElm
+    return newElm;
   } else {
   }
 }
@@ -69,8 +69,6 @@ export function initLifeCycle(Vue) {
     return JSON.stringify(value);
   };
   Vue.prototype._render = function () {
-    const vm = this;
-
     return vm.$options.render.call(vm);
   };
 }
@@ -82,11 +80,21 @@ export function mountComponent(vm, el) {
   // 调用 render 方法产生虚拟dom
   const updateComponent = () => {
     vm._update(vm._render());
-  }
+  };
 
-  new Watcher(vm, updateComponent,true)
+  const watcher = new Watcher(vm, updateComponent, true);
+
+  console.log(watcher);
 
   // 根据虚拟 dom 产生真实 dom
 
   // 插入 dom 到 el 元素中
+}
+
+// 调用钩子函数
+export function callHook(vm, hook) {
+  const handlers = vm.$options[hook]
+  if (handlers) {
+    handlers.forEach(handler=>handler.call(vm))
+  }
 }

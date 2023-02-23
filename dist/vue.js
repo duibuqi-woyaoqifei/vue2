@@ -31,6 +31,27 @@
       return _arr;
     }
   }
+  function ownKeys(object, enumerableOnly) {
+    var keys = Object.keys(object);
+    if (Object.getOwnPropertySymbols) {
+      var symbols = Object.getOwnPropertySymbols(object);
+      enumerableOnly && (symbols = symbols.filter(function (sym) {
+        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+      })), keys.push.apply(keys, symbols);
+    }
+    return keys;
+  }
+  function _objectSpread2(target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = null != arguments[i] ? arguments[i] : {};
+      i % 2 ? ownKeys(Object(source), !0).forEach(function (key) {
+        _defineProperty(target, key, source[key]);
+      }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys(Object(source)).forEach(function (key) {
+        Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+      });
+    }
+    return target;
+  }
   function _typeof(obj) {
     "@babel/helpers - typeof";
 
@@ -61,6 +82,20 @@
       writable: false
     });
     return Constructor;
+  }
+  function _defineProperty(obj, key, value) {
+    key = _toPropertyKey(key);
+    if (key in obj) {
+      Object.defineProperty(obj, key, {
+        value: value,
+        enumerable: true,
+        configurable: true,
+        writable: true
+      });
+    } else {
+      obj[key] = value;
+    }
+    return obj;
   }
   function _slicedToArray(arr, i) {
     return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest();
@@ -97,6 +132,54 @@
   function _toPropertyKey(arg) {
     var key = _toPrimitive(arg, "string");
     return typeof key === "symbol" ? key : String(key);
+  }
+
+  var strats = {};
+  var LIFECYCLE = ["beforeCreate", "created"];
+  LIFECYCLE.forEach(function (hook) {
+    strats[hook] = function (p, c) {
+      if (c) {
+        if (p) {
+          return p.concat(c);
+        } else {
+          return [c];
+        }
+      } else {
+        return p;
+      }
+    };
+  });
+  strats.data = function () {};
+  strats.compiuted = function () {};
+  strats.watch = function () {};
+  function mergeOptions(parent, child) {
+    var options = _objectSpread2(_objectSpread2({}, parent), child);
+    for (var key in parent) {
+      mergeField(key);
+    }
+    for (var _key in child) {
+      if (!parent.hasOwnProperty(_key)) {
+        mergeField(_key);
+      }
+    }
+    function mergeField(key) {
+      if (strats[key]) {
+        options[key] = strats[key](parent[key], child[key]);
+      } else {
+        options[key] = child[key] || parent[key];
+      }
+    }
+    return options;
+  }
+
+  function initGlobalAPI(Vue) {
+    // 静态方法
+
+    Vue.options = {};
+    Vue.mixin = function (mixin) {
+      this.options = mergeOptions(this.options, mixin);
+      return this;
+    };
   }
 
   var ncname = "[a-zA-Z_][\\w\\-\\.]*";
@@ -289,11 +372,12 @@
     return render;
   }
 
+  var id$1 = 0;
   var Dep = /*#__PURE__*/function () {
     function Dep() {
       _classCallCheck(this, Dep);
       // 属性的 dep 要收集 watcher
-      this.id = id++;
+      this.id = id$1++;
 
       // 存放当前属性对应的 watcher 有哪些
       this.subs = [];
@@ -308,18 +392,25 @@
       value: function addSub(watcher) {
         this.subs.push(watcher);
       }
+    }, {
+      key: "notify",
+      value: function notify() {
+        this.subs.forEach(function (watcher) {
+          return watcher.update();
+        });
+      }
     }]);
     return Dep;
   }();
   Dep.target = null;
 
-  var id$1 = 0;
+  var id = 0;
 
   // 渲染根实例
   var Watcher = /*#__PURE__*/function () {
     function Watcher(vm, fn, options) {
       _classCallCheck(this, Watcher);
-      this.id = id$1++;
+      this.id = id++;
 
       // 是一个渲染 watcher
       this.renderWatcher = options;
@@ -352,9 +443,87 @@
         // 渲染完毕清空
         Dep.target = null;
       }
+    }, {
+      key: "update",
+      value: function update() {
+        // 暂存当前的 watcher
+        queueWatcher(this);
+        // 重新渲染
+        // this.get()
+      }
+    }, {
+      key: "run",
+      value: function run() {
+        this.get();
+      }
     }]);
     return Watcher;
-  }(); //
+  }();
+  var queue = [];
+  var has = {};
+  var pending = false;
+  function flushSchedulerQueue() {
+    var flushQueue = queue.slice(0);
+    queue = [];
+    has = {};
+    pending = false;
+    flushQueue.forEach(function (q) {
+      return q.run();
+    });
+  }
+  function queueWatcher(watcher) {
+    var id = watcher.id;
+    if (!has[id]) {
+      queue.push(watcher);
+      has[id] = true;
+      if (!pending) {
+        setTimeout(flushSchedulerQueue, 0);
+        pending = true;
+      }
+    }
+  }
+  var callbacks = [];
+  var waiting = false;
+  function flushCallbacks() {
+    waiting = true;
+    var cbs = callbacks.slice(0);
+    callbacks = [];
+    cbs.forEach(function (cb) {
+      return cb();
+    });
+  }
+  var timerFunc;
+  if (Promise) {
+    timerFunc = function timerFunc() {
+      Promise.resolve().then(flushCallbacks);
+    };
+  } else if (MutationObserver) {
+    var observer = new MutationObserver(flushCallbacks);
+    var textNode = document.createTextNode(1);
+    observer.observe(textNode, {
+      characterData: true
+    });
+    timerFunc = function timerFunc() {
+      textNode.textContent = 2;
+    };
+  } else if (setImmediate) {
+    timerFunc = function timerFunc() {
+      setImmediate(flushCallbacks);
+    };
+  } else {
+    timerFunc = function timerFunc() {
+      setTimeout(flushCallbacks);
+    };
+  }
+  function nextTick(cb) {
+    callbacks.push(cb);
+    if (!waiting) {
+      setTimeout(function () {
+        timerFunc();
+        waiting = true;
+      }, 0);
+    }
+  }
 
   // h() _c()
   function createElementVNode(vm, tag, data) {
@@ -454,7 +623,6 @@
       return JSON.stringify(value);
     };
     Vue.prototype._render = function () {
-      var vm = this;
       return vm.$options.render.call(vm);
     };
   }
@@ -466,11 +634,22 @@
     var updateComponent = function updateComponent() {
       vm._update(vm._render());
     };
-    new Watcher(vm, updateComponent, true);
+    var watcher = new Watcher(vm, updateComponent, true);
+    console.log(watcher);
 
     // 根据虚拟 dom 产生真实 dom
 
     // 插入 dom 到 el 元素中
+  }
+
+  // 调用钩子函数
+  function callHook(vm, hook) {
+    var handlers = vm.$options[hook];
+    if (handlers) {
+      handlers.forEach(function (handler) {
+        return handler.call(vm);
+      });
+    }
   }
 
   // 重写数组部分方法
@@ -509,7 +688,7 @@
     function Observer(data) {
       _classCallCheck(this, Observer);
       // 数据添加 __ob__ 标识
-      Object.defineProperty(data, '__ob__', {
+      Object.defineProperty(data, "__ob__", {
         value: this,
         enumerable: false // 循环时不可枚举
       });
@@ -561,6 +740,9 @@
         if (newValue === value) return;
         observe(newValue);
         value = newValue;
+
+        // 通知更新
+        dep.notify();
       }
     });
   }
@@ -610,10 +792,11 @@
     Vue.prototype._init = function (options) {
       // 用户挂载到实例
       var vm = this;
-      vm.$options = options;
-
+      vm.$options = mergeOptions(this.constructor.options, options);
+      callHook(vm, 'beforeCreate');
       // 初始化状态
       initState(vm);
+      callHook(vm, 'created');
 
       // 挂载
       if (options.el) {
@@ -653,10 +836,11 @@
   function Vue(options) {
     this._init(options);
   }
-
+  Vue.prototype.$nextTick = nextTick;
   // 扩展 init 方法
   initMixin(Vue);
   initLifeCycle(Vue);
+  initGlobalAPI(Vue);
 
   return Vue;
 

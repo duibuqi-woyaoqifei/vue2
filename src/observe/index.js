@@ -4,10 +4,10 @@ import Dep from "./dep";
 class Observer {
   constructor(data) {
     // 数据添加 __ob__ 标识
-    Object.defineProperty(data, '__ob__', {
+    Object.defineProperty(data, "__ob__", {
       value: this,
-      enumerable:false  // 循环时不可枚举
-    })
+      enumerable: false, // 循环时不可枚举
+    });
 
     if (Array.isArray(data)) {
       // 重写js数组方法
@@ -33,13 +33,13 @@ export function defineReactive(target, key, value) {
   observe(value);
 
   // 每一个属性都有一个 dep
-  let dep = new Dep()
+  let dep = new Dep();
 
   Object.defineProperty(target, key, {
     // 读取执行 get
     get() {
       if (Dep.target) {
-        dep.depend()
+        dep.depend();
       }
       return value;
     },
@@ -49,6 +49,9 @@ export function defineReactive(target, key, value) {
       if (newValue === value) return;
       observe(newValue);
       value = newValue;
+
+      // 通知更新
+      dep.notify();
     },
   });
 }

@@ -18,6 +18,9 @@
   </div>
   <script src="vue.js"></script>
   <script>
+    
+    console.log(Vue.options);
+
     const vm = new Vue({
       data() {
         return {
@@ -29,16 +32,38 @@
           },
           hobby: ['eat people', 'fucking vagina', 'make love']
         }
+      },
+      created() {
+        console.log('created');
       }
     })
-    vm.$mount('#app')
 
-    setTimeout(() => {
-      vm.name = 'jw'
-      vm.age = 3333
+    Vue.mixin({
+      created() {
+        console.log('mixin1-created');
+      },
+      a: 1
+    })
+    Vue.mixin({
+      created() {
+        console.log('mixin1-created');
+      },
+      b: 2
+    })
+    // vm.$mount('#app')
 
-      vm._update(vm._render())
-    }, 1000);
+    // vm.$nextTick(() => {
+    //   console.log(app.innerHTML);
+    // })
+    // vm.$nextTick(() => {
+    //   console.log(app.innerHTML);
+    // })
+    // vm.$nextTick(() => {
+    //   console.log(app.innerHTML);
+    // })
+
+
+    // vm.name = 'jw'
   </script>
 </body>
 </html>
