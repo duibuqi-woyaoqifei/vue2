@@ -1,21 +1,35 @@
-import Dep from "./dep";
+import Dep, { popTarget, pushTarget } from "./dep";
 
 let id = 0;
 
 // 渲染根实例
 class Watcher {
-  constructor(vm, fn, options) {
+  constructor(vm, exprOrFn, options, cb) {
     this.id = id++;
 
     // 是一个渲染 watcher
     this.renderWatcher = options;
 
     // getter 意味着调用这个函数可以发生取值操作
-    this.getter = fn;
+    if (typeof exprOrFn === "string") {
+      this.getter = function () {
+        return vm[exprOrFn];
+      };
+    } else {
+      this.getter = exprOrFn;
+    }
 
     this.deps = [];
     this.depsId = new Set();
-    this.get();
+    this.vm = vm;
+    this.cb = cb;
+    this.lazy = options.lazy;
+    this.user = options.user;
+
+    // 缓存
+    this.dirty = this.lazy;
+
+    this.value = this.lazy ? undefined : this.get();
   }
 
   addDep(dep) {
@@ -26,24 +40,46 @@ class Watcher {
       dep.addSub(this);
     }
   }
+  evaluate() {
+    this.value = this.get();
+    this.dirty = false;
+  }
   get() {
     // 静态属性只有一份
-    Dep.target = this;
+    pushTarget(this);
 
     // 会去 vm 上取值
-    this.getter();
+    let value = this.getter.call(this.vm);
 
     // 渲染完毕清空
-    Dep.target = null;
+    popTarget();
+
+    return value;
+  }
+  depend() {
+    let i = this.deps.length;
+
+    while (i--) {
+      this.deps[i].depend();
+    }
   }
   update() {
-    // 暂存当前的 watcher
-    queueWatcher(this);
+    if (this.lazy) {
+      this.dirty = true;
+    } else {
+      queueWatcher(this);
+    }
+
     // 重新渲染
-    // this.get()
+    this.get();
   }
   run() {
-    this.get();
+    let oldValue = this.value;
+    let newValue = this.get();
+
+    if (this.user) {
+      this.cb.call(this.vm, oldValue, newValue);
+    }
   }
 }
 
@@ -70,45 +106,45 @@ function queueWatcher(watcher) {
   }
 }
 
-let callbacks = []
-let waiting = false
+let callbacks = [];
+let waiting = false;
 function flushCallbacks() {
-  waiting = true
-  let cbs = callbacks.slice(0)
-  callbacks = []
-  cbs.forEach(cb=>cb())
+  waiting = true;
+  let cbs = callbacks.slice(0);
+  callbacks = [];
+  cbs.forEach((cb) => cb());
 }
 
-let timerFunc 
+let timerFunc;
 if (Promise) {
   timerFunc = () => {
-    Promise.resolve().then(flushCallbacks)
-  }
+    Promise.resolve().then(flushCallbacks);
+  };
 } else if (MutationObserver) {
-  let observer = new MutationObserver(flushCallbacks)
-  let textNode = document.createTextNode(1)
+  let observer = new MutationObserver(flushCallbacks);
+  let textNode = document.createTextNode(1);
   observer.observe(textNode, {
-    characterData:true
-  })
+    characterData: true,
+  });
   timerFunc = () => {
-    textNode.textContent = 2
-  }
+    textNode.textContent = 2;
+  };
 } else if (setImmediate) {
   timerFunc = () => {
-    setImmediate(flushCallbacks)
-  }
+    setImmediate(flushCallbacks);
+  };
 } else {
   timerFunc = () => {
-    setTimeout(flushCallbacks)
-  }
+    setTimeout(flushCallbacks);
+  };
 }
 
 export function nextTick(cb) {
-  callbacks.push(cb)
+  callbacks.push(cb);
   if (!waiting) {
     setTimeout(() => {
-      timerFunc()
-      waiting = true
+      timerFunc();
+      waiting = true;
     }, 0);
   }
 }

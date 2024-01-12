@@ -3,6 +3,9 @@ import Dep from "./dep";
 
 class Observer {
   constructor(data) {
+    // 所有对象增加 dep
+    this.dep = new Dep();
+
     // 数据添加 __ob__ 标识
     Object.defineProperty(data, "__ob__", {
       value: this,
@@ -28,11 +31,22 @@ class Observer {
     data.forEach((item) => observe(item));
   }
 }
+
+// 递归增加数组 dep
+function dependArray(value) {
+  for (let i = 0; i < value.length; i++) {
+    let current = value[i];
+    current.__ob__ && current.__ob__.dep.depend();
+    if (Array.isArray(current)) {
+      dependArray(current);
+    }
+  }
+}
+
 export function defineReactive(target, key, value) {
   // 对所有对象都进行属性劫持
-  observe(value);
+  let childOb = observe(value);
 
-  // 每一个属性都有一个 dep
   let dep = new Dep();
 
   Object.defineProperty(target, key, {
@@ -40,6 +54,13 @@ export function defineReactive(target, key, value) {
     get() {
       if (Dep.target) {
         dep.depend();
+        if (childOb) {
+          childOb.dep.depend();
+
+          if (Array.isArray(value)) {
+            dependArray(value);
+          }
+        }
       }
       return value;
     },

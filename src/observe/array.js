@@ -29,7 +29,10 @@ methods.forEach((method) => {
     if (inserted) {
       ob.observeArray(inserted);
     }
-    
+
+    // 通知更新
+    ob.dep.notify();
+
     return result;
   };
 });

@@ -42,7 +42,7 @@ function root(node) {
         if (index > lastIndex) {
           tokens.push(JSON.stringify(text.slice(lastIndex, index)));
         }
-        tokens.push(`_s(${match[1]})`);
+        tokens.push(`_s(${match[1].trim()})`);
 
         lastIndex = index + match[0].length;
       }
@@ -70,8 +70,10 @@ export function compileToFunction(template) {
 
   // 生成 render 方法返回虚拟 dom , with 函数 + new Function 实现模板引擎
   let code = codeRoot(ast);
+
   code = `with(this) { return ${code} }`;
+
   let render = new Function(code);
 
-  return render
+  return render;
 }

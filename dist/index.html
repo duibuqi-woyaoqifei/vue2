@@ -8,62 +8,21 @@
 </head>
 <body>
   <div id="app" style="height: 1px;width: 1px;">
-    <div style="color: aqua;">
-      asd{{name}}hello{{age}}asd
-    </div>
-
-    <span>
-      wwwww
-    </span>
+    <span>{{name}}</span>
   </div>
+
   <script src="vue.js"></script>
   <script>
-
-    console.log(Vue.options);
-
     const vm = new Vue({
+      el: '#app',
       data() {
-        return {
-          name: 'asds',
-          age: 213,
-          address: {
-            content: 'qwdq',
-            details: 'dwdqdwdqwdqwd'
-          },
-          hobby: ['asdasd', 'sadsadad', 'sadadqwdwqe']
-        }
-      },
-      created() {
-        console.log('created');
+        return { name: 'ss' }
       }
     })
 
-    Vue.mixin({
-      created() {
-        console.log('mixin1-created');
-      },
-      a: 1
-    })
-    Vue.mixin({
-      created() {
-        console.log('mixin1-created');
-      },
-      b: 2
-    })
-    // vm.$mount('#app')
-
-    // vm.$nextTick(() => {
-    //   console.log(app.innerHTML);
-    // })
-    // vm.$nextTick(() => {
-    //   console.log(app.innerHTML);
-    // })
-    // vm.$nextTick(() => {
-    //   console.log(app.innerHTML);
-    // })
-
-
-    // vm.name = 'jw'
+    setTimeout(() => {
+      vm.name = 'jb'
+    }, 1000)
   </script>
 </body>
 </html>

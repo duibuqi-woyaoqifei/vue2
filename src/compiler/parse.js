@@ -114,5 +114,5 @@ export function parseHTML(html) {
       }
     }
   }
-  return root
+  return root;
 }

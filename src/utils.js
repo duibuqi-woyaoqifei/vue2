@@ -13,9 +13,44 @@ LIFECYCLE.forEach((hook) => {
     }
   };
 });
-strats.data = function () {};
-strats.compiuted = function () {};
-strats.watch = function () {};
+strats.data = function (p, c) {
+  if (!c) {
+    return p;
+  } else if (!p) {
+    return c;
+  } else {
+    return { ...p, ...c };
+  }
+};
+strats.computed = function (p, c) {
+  if (!c) {
+    return p;
+  } else if (!p) {
+    return c;
+  } else {
+    return { ...p, ...c };
+  }
+};
+strats.watch = function (p, c) {
+  if (!c) {
+    return p;
+  } else if (!p) {
+    return c;
+  } else {
+    return { ...p, ...c };
+  }
+};
+strats.components = function (parentVal, childVal) {
+  const res = Object.create(parentVal);
+
+  if (childVal) {
+    for (let key in childVal) {
+      res[key] = childVal[key];
+    }
+  }
+
+  return res;
+};
 export function mergeOptions(parent, child) {
   const options = { ...parent, ...child };
 
@@ -33,6 +68,7 @@ export function mergeOptions(parent, child) {
     if (strats[key]) {
       options[key] = strats[key](parent[key], child[key]);
     } else {
+      // 如果 child 中没有该选项，则使用 parent 中的选项
       options[key] = child[key] || parent[key];
     }
   }

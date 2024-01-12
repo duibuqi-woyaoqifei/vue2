@@ -10,11 +10,12 @@ export function initMixin(Vue) {
     // 用户挂载到实例
     const vm = this;
     vm.$options = mergeOptions(this.constructor.options, options);
+    // vm.$options = options;
 
-    callHook(vm,'beforeCreate')
+    callHook(vm, "beforeCreate");
     // 初始化状态
     initState(vm);
-    callHook(vm,'created')
+    callHook(vm, "created");
 
     // 挂载
     if (options.el) {
@@ -35,11 +36,9 @@ export function initMixin(Vue) {
       if (!ops.template && el) {
         template = el.outerHTML;
       } else {
-        if (el) {
-          template = ops.template;
-        }
+        template = ops.template;
       }
-      if (template && el) {
+      if (template) {
         // 编译模板
         const render = compileToFunction(template);
         ops.render = render;
